@@ -35,6 +35,42 @@ def _hash_url(url: str) -> str:
     return hashlib.sha3_224(url.encode()).hexdigest()
 
 
+def _optimize_repo(name: str, repo_dir: str, force: bool = False):
+    # Try to GC/repack a bit earlier than Git itself would
+    # These are mostly (stupid) heuristics I came up with randomly
+    p = subprocess.run(['git', 'count-objects', '-v'],
+                       stdout=subprocess.PIPE, text=True,
+                       cwd=repo_dir, check=True)
+    stats = dict(line.split(': ', 1) for line in p.stdout.splitlines())
+
+    need_repack = int(stats.get('count', 0)) >= 256
+    packs = int(stats.get('packs', 0)) + int(need_repack)
+
+    # Too many packs: GC and combine them
+    if force or packs > 16:
+        # Running 'git gc' on large repositories takes a lot of time,
+        # so we only do it here if it is likely going to be quick.
+        # Otherwise we hope that git manages somehow with git gc --auto
+        # (or need to do it with a separate cron job or so...)
+        if int(stats.get('in-pack', 0)) < 4_000_000:
+            print(f"Running 'git gc' for {name}: {stats}")
+            subprocess.run(['git', 'gc'], cwd=repo_dir, check=True)
+            return
+
+        print(f'WARNING: Skipping optimization of {name} because it is too large: {stats}')
+
+    # Many (unpacked) objects: pack them
+    if need_repack:
+        print(f"Packing objects for {name}: {stats}")
+        subprocess.run(['git', 'repack', '-d'], cwd=repo_dir, check=True)
+
+    # Pack refs at least
+    if force:
+        subprocess.run(['git', 'pack-refs', '--all'], cwd=repo_dir, check=True)
+    else:
+        subprocess.run(['git', 'pack-refs'], cwd=repo_dir, check=True)
+
+
 def fetch(repos_dir: str, s: Sync):
     git_dir = os.path.join(repos_dir, _GIT_DIR)
     os.makedirs(git_dir, exist_ok=True)
@@ -82,7 +118,7 @@ def fetch(repos_dir: str, s: Sync):
         # (it does not unpack all the refs/objects). But there does not seem to be a way
         # to tell that to 'git fetch'. gc early to avoid keeping many files around.
         if new_repo:
-            subprocess.run(['git', 'gc'], cwd=repo_dir, check=True)
+            _optimize_repo(name, repo_dir, force=True)
 
 
 def push(repos_dir: str, s: Sync):
@@ -103,5 +139,4 @@ def optimize(repos_dir: str, s: Sync):
 
     # Pack repository to save some space
     for name, r in s.repos.items():
-        repo_dir = os.path.join(git_dir, _hash_url(r.src.url))
-        subprocess.run(['git', 'gc'], cwd=repo_dir, check=True)
+        _optimize_repo(name, os.path.join(git_dir, _hash_url(r.src.url)))
