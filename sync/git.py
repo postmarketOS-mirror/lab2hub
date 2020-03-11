@@ -35,7 +35,7 @@ def _hash_url(url: str) -> str:
     return hashlib.sha3_224(url.encode()).hexdigest()
 
 
-def sync(repos_dir: str, s: Sync):
+def fetch(repos_dir: str, s: Sync):
     git_dir = os.path.join(repos_dir, _GIT_DIR)
     os.makedirs(git_dir, exist_ok=True)
 
@@ -84,6 +84,10 @@ def sync(repos_dir: str, s: Sync):
         if new_repo:
             subprocess.run(['git', 'gc'], cwd=repo_dir, check=True)
 
+
+def push(repos_dir: str, s: Sync):
+    git_dir = os.path.join(repos_dir, _GIT_DIR)
+
     # Push updates to mirror
     for name, r in s.repos.items():
         print(f"Pushing {name}")
@@ -92,7 +96,10 @@ def sync(repos_dir: str, s: Sync):
         subprocess.run(['git', 'push', '--mirror', r.dest.url],
                        cwd=repo_dir, check=True)
 
+
+def optimize(repos_dir: str, s: Sync):
     print(f"Optimizing repositories")
+    git_dir = os.path.join(repos_dir, _GIT_DIR)
 
     # Pack repository to save some space
     for name, r in s.repos.items():

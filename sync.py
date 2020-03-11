@@ -13,7 +13,16 @@ parser.add_argument('--key', type=argparse.FileType('rb'), required=True,
 parser.add_argument('--app-id', type=int, required=True, help="GitHub App ID")
 parser.add_argument('--repo-dir', default='repos',
                     help="Directory to store cloned repositories in")
+parser.add_argument('--no-push', dest='push', default=True, action='store_false',
+                    help="Only fetch changes, do not push to mirror")
+parser.add_argument('--no-optimize', dest='optimize', default=True, action='store_false',
+                    help="Do not run 'git gc' after fetching changes")
 args = parser.parse_args()
 
-repos = sync.hub.prepare_sync(args.key.read(), args.app_id, args.installation_id)
-sync.git.sync(args.repo_dir, repos)
+s = sync.hub.prepare_sync(args.key.read(), args.app_id, args.installation_id)
+
+sync.git.fetch(args.repo_dir, s)
+if args.push:
+    sync.git.push(args.repo_dir, s)
+if args.optimize:
+    sync.git.optimize(args.repo_dir, s)
