@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import argparse
+import time
+from datetime import datetime, timedelta
 
 import sync.git
 import sync.hub
@@ -19,6 +21,9 @@ parser.add_argument('--no-optimize', dest='optimize', default=True, action='stor
                     help="Do not run 'git gc' after fetching changes")
 args = parser.parse_args()
 
+print(f"Starting sync at {datetime.now()}")
+start = time.monotonic()
+
 s = sync.hub.prepare_sync(args.key.read(), args.app_id, args.installation_id)
 
 sync.git.fetch(args.repo_dir, s)
@@ -26,3 +31,5 @@ if args.push:
     sync.git.push(args.repo_dir, s)
 if args.optimize:
     sync.git.optimize(args.repo_dir, s)
+
+print(f"Sync completed after {timedelta(seconds=time.monotonic() - start)}")
