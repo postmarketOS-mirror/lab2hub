@@ -39,7 +39,7 @@ def _optimize_repo(name: str, repo_dir: str, force: bool = False):
     # Try to GC/repack a bit earlier than Git itself would
     # These are mostly (stupid) heuristics I came up with randomly
     p = subprocess.run(['git', 'count-objects', '-v'],
-                       stdout=subprocess.PIPE, universal_newlines=True, # text
+                       stdout=subprocess.PIPE, universal_newlines=True,  # text
                        cwd=repo_dir, check=True)
     stats = dict(line.split(': ', 1) for line in p.stdout.splitlines())
 

@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from dataclasses import dataclass
 from typing import Dict, cast
 
@@ -114,6 +113,12 @@ class Client:
                                        'restrictions': None,
                                    })
                 branch._json(resp, 200)
+
+    def delete_repo(self, repo: admin.Repo):
+        r = cast(_Repo, repo).r
+        print(f"WARNING: Deleting repository: {r.full_name}")
+        if not r.delete():
+            print(f"Failed to delete: {r.full_name}")
 
 
 def create_app_client(key: bytes, app_id: int, organization: str) -> Client:
