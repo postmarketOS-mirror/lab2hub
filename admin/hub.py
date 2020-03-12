@@ -75,11 +75,13 @@ class Client:
             other_default_branch = None
 
         if repo.url != other.url or repo.description != other.description \
-                or repo.default_branch != other_default_branch:
+                or repo.default_branch != other_default_branch \
+                or r.has_issues or r.has_wiki:
             print(f"Updating GitHub repository settings for {r.full_name}")
 
             r.edit(r.name, description=other.description, homepage=other.url,
-                   default_branch=other_default_branch)
+                   default_branch=other_default_branch,
+                   has_issues=False, has_wiki=False)
 
         # GitHub does not allow upper case / spaces in topics
         other_topics = self.convert_tags(other)
