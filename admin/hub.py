@@ -52,7 +52,7 @@ class Client:
     @staticmethod
     def convert_tags(repo: admin.Repo):
         # GitHub does not allow upper case / spaces / underscores in topics
-        return [t.lower().replace(' ', '-').replace('_', '-') for t in repo.tags]
+        return [t.lower().replace(' ', '-').replace('_', '-').replace('.', '') for t in repo.tags]
 
     def create_repo(self, name: str, other: admin.Repo):
         print(f"Creating GitHub repository {name} for {other.url}")
